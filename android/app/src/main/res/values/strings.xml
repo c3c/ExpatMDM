@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Expat MDM</string>
+    <string name="title_section1">Sysinfo</string>
+    <string name="title_section2">Exploits</string>
+    <string name="title_section3">Patches</string>
+    <string name="action_settings">Settings</string>
+
+</resources>
