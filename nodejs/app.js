@@ -33,7 +33,7 @@ app.post('/enroll', function(req, res) {
 	}
 
 	models.Vuln.findAll({where: {
-		affects: {like: '%|' + p["kernel.version"] + '|%'}, 
+		affects: {like: '%|' + p["os.version"] + '|%'}, 
 		target: "kernel"
 	}}).success(function(v) {
 		vulns.push(v)
