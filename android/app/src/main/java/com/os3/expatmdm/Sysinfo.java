@@ -74,6 +74,7 @@ public class Sysinfo {
         info.put("methods.devmem", getDevMemAvailable() ? "1" : "0");
         info.put("methods.devkmem", getDevKmemAvailable() ? "1" : "0");
         info.put("methods.modules", getModulesAvailable() ? "1" : "0");
+        info.put("methods.devptmx", getDevPtmxAvailable() ? "1" : "0");
 
         return info;
     }
@@ -176,6 +177,11 @@ public class Sysinfo {
 
     private static boolean getDevKmemAvailable() {
         File f = new File("/dev/kmem");
+        return f.exists();
+    }
+
+    private static boolean getDevPtmxAvailable() {
+        File f = new File("/dev/ptmx");
         return f.exists();
     }
 

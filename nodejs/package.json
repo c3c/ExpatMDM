@@ -1,0 +1,10 @@
+{
+  "name": "ExpatMDM-Server",
+  "description": "The manager/server side of the MDM solution.",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": "3.x",
+    "sqlite3": "~2.2.3",
+    "sequelize": "~1.7.9"
+  }
+}

@@ -14,10 +14,13 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import java.util.HashMap;
 import java.util.Locale;
+
+import static com.os3.expatmdm.Expat.FetchPatches;
 
 
 public class MainActivity extends ActionBarActivity implements ActionBar.TabListener {
@@ -75,16 +78,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
                             .setText(mSectionsPagerAdapter.getPageTitle(i))
                             .setTabListener(this));
         }
-
-//        AsyncHttpClient client = new AsyncHttpClient();
-//        client.get("http://www.google.com", new AsyncHttpResponseHandler() {
-//            @Override
-//            public void onSuccess(String response) {
-//                System.out.println(response);
-//            }
-//        });
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -197,7 +191,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
                     String tpl = "<h2>System properties</h2>";
                     tpl += "Kernel version: " + gather.get("os.version");
                     String magic = gather.get("kernel.vermagic");
-                    tpl += "<br>Magic: " + magic.substring(magic.indexOf(" ")+1, magic.lastIndexOf(" "));
+                    tpl += "<br>Magic: " + (magic.length() > 2 ? (magic.substring(magic.indexOf(" ")+1, magic.lastIndexOf(" "))) : "N/A");
                     tpl += "<br>Architecture: " + gather.get("os.arch");
                     tpl += "<br>CPU ABI: " + gather.get("build.cpu_abi");
                     tpl += "<br>SDK level: " + gather.get("android.sdk");
@@ -207,19 +201,41 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
                             " " + gather.get("build.brand") +
                             " " + gather.get("build.model");
                     tpl += "<br>Runtime: " + gather.get("runtime.real");
-                    tpl += "<br>Verity: " + (gather.get("kernel.verity").equals("0") ? "disabled" : "enabled");
-                    tpl += "<br>Module support: " + (gather.get("methods.modules").equals("1") ? "enabled" : "disabled");
-                    tpl += "<br>Kallsyms: " + (gather.get("methods.kallsyms").equals("1") ? "enabled" : "disabled");
-                    tpl += "<br>Kmem: " + (gather.get("methods.devkmem").equals("1") ? "enabled" : "disabled");
+                    tpl += "<br>Verity: " + tr(gather.get("kernel.verity"));
+                    tpl += "<br>Module support: " + tr(gather.get("methods.modules"));
+                    tpl += "<br>Kallsyms: " + tr(gather.get("methods.kallsyms"));
+                    tpl += "<br>Kmem: " + tr(gather.get("methods.devkmem"));
+                    tpl += "<br>Unix98 PTYs: " + tr(gather.get("methods.devptmx"));
 
                     textView.setText(Html.fromHtml(tpl));
+                    FetchPatches(gather);
                     break;
                 case 1:
                     textView.setText("Checking with the remote server... Blib blob");
+                    Button button = (Button) rootView.findViewById(com.os3.expatmdm.R.id.button);
+                    button.setVisibility(View.VISIBLE);
+                    button.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            boolean a = 1==1;
+                        }
+                    });
                     break;
             }
 
             return rootView;
+        }
+
+        private String tr(String gathered) {
+            int x;
+            try
+            {
+                x = Integer.parseInt(gathered);
+            } catch(NumberFormatException nfe)
+            {
+                return null;
+            }
+            return x > 0 ? "enabled" : "disabled";
         }
 
     }
