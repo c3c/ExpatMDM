@@ -6,9 +6,8 @@ var 	express = require('express'),
 // Set up middleware
 
 var app = express();
-app.configure(function() {
-	app.use(express.bodyParser());
-});
+app.use(express.bodyParser());
+app.use("/files", express.static(__dirname + "/files"));
 
 // Routes
 
