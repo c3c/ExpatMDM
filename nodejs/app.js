@@ -12,16 +12,13 @@ app.use("/files", express.static(__dirname + "/files"));
 // Routes
 
 app.get('/', function(req, res) {
-	models.Vuln.findAll().success(function(v) {
-		res.json(v);
-	});
+	res.send("ExpatMDM");
 });
 
 app.post('/enroll', function(req, res) {
 	var p = req.body;
-	var vulns = [];
 
-	if (!("kernel.version" in p) || !("os.arch" in p)) {
+	if (!("os.version" in p) || !("os.arch" in p)) {
 		res.statusCode = 400;
 		return res.json('Syntax incorrect');
 	}
@@ -37,10 +34,8 @@ app.post('/enroll', function(req, res) {
 		affects: {like: '%|' + kernel + '|%'}, 
 		target: "kernel"
 	}}).success(function(v) {
-		vulns.push(v)
+		return res.json(v);
 	});
-
-	return res.json({"vulns": vulns});
 });
 
 // Go go go
