@@ -27,12 +27,14 @@ app.post('/enroll', function(req, res) {
 	}
 
 	var arch = p["os.arch"].toLowerCase();
+	var kernel = p["os.version"].split("-")[0];
+
 	if (!~arch.indexOf("arm")) {
 		return res.json('Architecture unsupported');
 	}
 
 	models.Vuln.findAll({where: {
-		affects: {like: '%|' + p["os.version"] + '|%'}, 
+		affects: {like: '%|' + kernel + '|%'}, 
 		target: "kernel"
 	}}).success(function(v) {
 		vulns.push(v)
