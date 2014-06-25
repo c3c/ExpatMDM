@@ -3,6 +3,7 @@ package com.os3.expatmdm;
 import android.os.Build;
 import android.text.TextUtils;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -63,7 +64,7 @@ public class Sysinfo {
 
         info.put("kernel.version", getKernelVersion());
         info.put("kernel.verity", getVerityAvailable()+"");
-        info.put("kernel.vermagic", getVermagic());
+        info.put("kernel.vermagic", getVermagic()+"");
 
         String runtime = getCurrentRuntimeValue();
         info.put("runtime.real", runtime == null ? System.getProperty("java.vm.name") : runtime);
@@ -247,7 +248,8 @@ public class Sysinfo {
             File[] kos = new File("/system/lib/modules/").listFiles(koFilter);
             for (File ko : kos) {
                 StreamSearcher searcher = new StreamSearcher(new byte[]{'v','e','r','m','a','g','i','c','='});
-                FileInputStream fis = new FileInputStream(ko);
+                // bottleneck... though buffering the input stream already cuts down execution time
+                BufferedInputStream fis = new BufferedInputStream(new FileInputStream(ko));
                 boolean found = searcher.search(fis);
                 if (found) {
                     StringBuilder builder = new StringBuilder();
