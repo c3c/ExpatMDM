@@ -11,7 +11,7 @@ var Vuln = sq.define('Vuln', {
 	"target": Sequelize.ENUM('kernel', 'runtime'),
 	"affects": Sequelize.STRING,
 	"exploit": Sequelize.STRING,
-	"expoit_entry": Sequelize.STRING,
+	"exploit_entry": Sequelize.STRING,
 	"patch": Sequelize.STRING,
 	"patch_entry": Sequelize.STRING
 });
