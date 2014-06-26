@@ -16,6 +16,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -97,32 +98,78 @@ public class Expat {
         });
     }
 
+ //   public native int nativeExpPutUser();
+
     // Only Kernel exploiting has been implemented at this very moment.
-    public static void Exploit() {
+    public static boolean Exploit() {
         // preload printf_to_logcat library ; doesn't seem to work :(( - possibly statically linked libc in implementation?
         //System.loadLibrary("printf");
 
         try {
             for (Map<String, String> map : KernelExploits) {
-                // This will result in crashes more than likely. Try another way
+                // Is there another way that is a bit more fault tolerant?
                 System.load(new File(Ctx.getFilesDir(), map.get("exploit")).getAbsolutePath());
-            }
 
+                // If it has an entry point defined, call it, and check its return value.
+                // It would be better to have the SO register its functions with the Java app,
+                // Then again, that would require an entry point as well, see JNI.java
+                String entry = map.get("exploit_entry");
+                if (!TextUtils.isEmpty(entry)) {
+                    try {
+                        Method entryMethod = JNI.class.getMethod(entry);
+                        int ret = (int) entryMethod.invoke(new JNI());
+                        if (ret != 0) {
+                            // are you absolutely sure? try again... (yeah this shouldn't be here, remove in due time)
+                            ret = (int) entryMethod.invoke(new JNI());
+                            if (ret != 0) {
+                                Log.e("Exploit", "Exploit failed. Moving on :)");
+                            }
+                        } else {
+                            return true;
+                        }
+                    } catch (Exception e){
+                        Log.e("Exploit", "Native library error: " + e.getMessage());
+                    }
+                }
+            }
         }
         catch (Exception e) {
             Log.e("Exploit", "Something has gone wrong during the exploiting step... " + e.getMessage());
         }
+
+        return false;
     }
 
-    public static void Patch() {
+    public static boolean Patch() {
         try {
             for (Map<String, String> map : Patches) {
                 System.load(new File(Ctx.getFilesDir(), map.get("patch")).getAbsolutePath());
+
+                String entry = map.get("patch_entry");
+                if (!TextUtils.isEmpty(entry)) {
+                    try {
+                        Method entryMethod = JNI.class.getMethod(entry);
+                        int ret = (int) entryMethod.invoke(new JNI());
+                        if (ret != 0) {
+                            // are you absolutely sure? try again... (yeah this shouldn't be here, remove in due time)
+                            ret = (int) entryMethod.invoke(new JNI());
+                            if (ret != 0) {
+                                Log.e("Patch", "Patching failed. Moving on :)");
+                                return false; // this should definitely not be here once we have multiple patches
+                            }
+                        }
+                    } catch (Exception e){
+                        Log.e("Patch", "Native library error: " + e.getMessage());
+                    }
+                }
             }
 
         }
         catch (Exception e) {
             Log.e("Patch", "Something has gone wrong during the patching step... " + e.getMessage());
+            return false;
         }
+
+        return true;
     }
 }

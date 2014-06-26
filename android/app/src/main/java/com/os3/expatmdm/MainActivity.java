@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -183,7 +184,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(com.os3.expatmdm.R.layout.fragment_main, container, false);
+            final View rootView = inflater.inflate(com.os3.expatmdm.R.layout.fragment_main, container, false);
             final TextView textView = (TextView) rootView.findViewById(com.os3.expatmdm.R.id.section_label);
             //textView.setText(Integer.toString(getArguments().getInt(ARG_SECTION_NUMBER)));
 
@@ -239,6 +240,14 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
                             button.setVisibility(View.INVISIBLE);
                             progress.setVisibility(View.VISIBLE);
 
+                            // very buggy check
+                            if (Expat.KernelExploits.size() == 0) {
+                                Toast.makeText(rootView.getContext(), "Need internet access!", Toast.LENGTH_LONG).show();
+                                button.setVisibility(View.VISIBLE);
+                                progress.setVisibility(View.INVISIBLE);
+                                return;
+                            }
+
                             // Ofc it's not needed to actually do the sleep, but we want some interactiveness...
                             new Handler().postDelayed(new Runnable() {
                                 public void run() {
@@ -247,7 +256,13 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
 
                                     new Handler().postDelayed(new Runnable() {
                                         public void run() {
-                                            Expat.Exploit();
+                                            if (!Expat.Exploit()) {
+                                                textView.setText(Html.fromHtml(tpl + "<br><br><b><font color='red'>Kernel exploit failed.</font><b>"));
+                                                button.setVisibility(View.VISIBLE);
+                                                progress.setVisibility(View.INVISIBLE);
+                                                return;
+                                            }
+
                                             final String tpl2 = tpl+ "<br>&#187; Got kernel access, skipping root exploit...";
                                             textView.setText(Html.fromHtml(tpl2));
 
@@ -258,7 +273,13 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
 
                                                     new Handler().postDelayed(new Runnable() {
                                                         public void run() {
-                                                            Expat.Patch();
+                                                            if (!Expat.Patch()) {
+                                                                textView.setText(Html.fromHtml(tpl3 + "<br><br><b><font color='red'>Some patches failed.</font><b>"));
+                                                                //button.setVisibility(View.VISIBLE);
+                                                                progress.setVisibility(View.INVISIBLE);
+                                                                return;
+                                                            }
+
                                                             progress.setVisibility(View.INVISIBLE);
                                                             textView.setText(Html.fromHtml(tpl3 + "<br><br><b><font color='green'>System patched!<font></b>"));
                                                         }
