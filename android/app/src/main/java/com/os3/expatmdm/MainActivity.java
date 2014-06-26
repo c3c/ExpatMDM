@@ -1,6 +1,7 @@
 package com.os3.expatmdm;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -15,12 +16,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.HashMap;
 import java.util.Locale;
-
-import static com.os3.expatmdm.Expat.FetchPatches;
 
 
 public class MainActivity extends ActionBarActivity implements ActionBar.TabListener {
@@ -78,6 +78,8 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
                             .setText(mSectionsPagerAdapter.getPageTitle(i))
                             .setTabListener(this));
         }
+
+        Expat.SetContext(getApplicationContext());
     }
 
     @Override
@@ -182,16 +184,16 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                 Bundle savedInstanceState) {
             View rootView = inflater.inflate(com.os3.expatmdm.R.layout.fragment_main, container, false);
-            TextView textView = (TextView) rootView.findViewById(com.os3.expatmdm.R.id.section_label);
+            final TextView textView = (TextView) rootView.findViewById(com.os3.expatmdm.R.id.section_label);
             //textView.setText(Integer.toString(getArguments().getInt(ARG_SECTION_NUMBER)));
 
             switch (getArguments().getInt(ARG_SECTION_NUMBER)) {
-                case 0:
+                case 0: {
                     HashMap<String, String> gather = Sysinfo.Gather();
                     String tpl = "<h2>System properties</h2>";
                     tpl += "Kernel version: " + gather.get("os.version");
                     String magic = gather.get("kernel.vermagic");
-                    tpl += "<br>Magic: " + (magic.length() > 2 ? (magic.substring(magic.indexOf(" ")+1, magic.lastIndexOf(" "))) : "N/A");
+                    tpl += "<br>Magic: " + (magic.length() > 2 ? (magic.substring(magic.indexOf(" ") + 1, magic.lastIndexOf(" "))) : "N/A");
                     tpl += "<br>Architecture: " + gather.get("os.arch");
                     tpl += "<br>CPU ABI: " + gather.get("build.cpu_abi");
                     tpl += "<br>SDK level: " + gather.get("android.sdk");
@@ -208,19 +210,69 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
                     tpl += "<br>Unix98 PTYs: " + tr(gather.get("methods.devptmx"));
 
                     textView.setText(Html.fromHtml(tpl));
-                    FetchPatches(gather);
+                    Expat.FetchPatches(gather);
+
                     break;
-                case 1:
-                    textView.setText("Checking with the remote server... Blib blob");
-                    Button button = (Button) rootView.findViewById(com.os3.expatmdm.R.id.button);
+                }
+                case 1: {
+                    String tpl = "<h2>Exploit & patch</h2>";
+                    tpl += "The following exploits were found for your device:";
+                    tpl += "<br>&nbsp;&nbsp;- Kernel exploits: <b>3</b>"; // those are still arbitrary, ofc... :-)
+                    tpl += "<br>&nbsp;&nbsp;- Root exploits: <b>7</b>";
+                    tpl += "<br>";
+                    tpl += "<br>The following patches were found for your device:";
+                    tpl += "<br>&nbsp;&nbsp;- Kernel patches: <b>4</b>";
+                    tpl += "<br>&nbsp;&nbsp;- Runtime patches: <b>25</b>";
+                    tpl += "<br><br>Not all vulnerabilities give root/kernel access, still it may be important to patch them, such as weak RNGs.";
+
+                    textView.setText(Html.fromHtml(tpl));
+
+                    final ProgressBar progress = (ProgressBar) rootView.findViewById(com.os3.expatmdm.R.id.progressBar);
+                    final Button button = (Button) rootView.findViewById(com.os3.expatmdm.R.id.button);
+
                     button.setVisibility(View.VISIBLE);
+
+                    final String finalTpl = tpl;
                     button.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            boolean a = 1==1;
+                            button.setVisibility(View.INVISIBLE);
+                            progress.setVisibility(View.VISIBLE);
+
+                            // Ofc it's not needed to actually do the sleep, but we want some interactiveness...
+                            new Handler().postDelayed(new Runnable() {
+                                public void run() {
+                                    final String tpl = finalTpl + "<br><br>&#187; Gaining kernel access...";
+                                    textView.setText(Html.fromHtml(tpl));
+
+                                    new Handler().postDelayed(new Runnable() {
+                                        public void run() {
+                                            Expat.Exploit();
+                                            final String tpl2 = tpl+ "<br>&#187; Got kernel access, skipping root exploit...";
+                                            textView.setText(Html.fromHtml(tpl2));
+
+                                            new Handler().postDelayed(new Runnable() {
+                                                public void run() {
+                                                    final String tpl3 = tpl2 + "<br>&#187; Applying patches... prepare for crashes :)";
+                                                    textView.setText(Html.fromHtml(tpl3));
+
+                                                    new Handler().postDelayed(new Runnable() {
+                                                        public void run() {
+                                                            Expat.Patch();
+                                                            progress.setVisibility(View.INVISIBLE);
+                                                            textView.setText(Html.fromHtml(tpl3 + "<br><br><b><font color='green'>System patched!<font></b>"));
+                                                        }
+                                                    }, 5000);
+                                                }
+                                            }, 1000);
+                                        }
+                                    }, 2000);
+                                }
+                            }, 1000);
                         }
                     });
                     break;
+                }
             }
 
             return rootView;
