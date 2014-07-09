@@ -8,9 +8,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -77,7 +81,30 @@ public class Sysinfo {
         info.put("methods.modules", getModulesAvailable() ? "1" : "0");
         info.put("methods.devptmx", getDevPtmxAvailable() ? "1" : "0");
 
+        File loc= new File(Expat.Ctx.getFilesDir(), "ksymsprint");
+        try {
+            copy(new File("/data/local/tmp/kallsymsprint"), loc);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Executer("chmod 770 " + loc.getAbsolutePath());
+        Executer(loc.getAbsolutePath());
         return info;
+    }
+
+    public static void copy(File src, File dst) throws IOException {
+        InputStream in = new FileInputStream(src);
+        OutputStream out = new FileOutputStream(dst);
+
+        // Transfer bytes from in to out
+        byte[] buf = new byte[1024];
+        int len;
+        while ((len = in.read(buf)) > 0) {
+            out.write(buf, 0, len);
+        }
+        in.close();
+        out.close();
     }
 
     private static String getKernelVersion() {
@@ -94,6 +121,32 @@ public class Sysinfo {
         }
 
         return procVersionStr;
+    }
+
+    public static String Executer(String command) {
+        StringBuffer output = new StringBuffer();
+        StringBuffer output2 = new StringBuffer();
+
+        Process p;
+        try {
+            p = Runtime.getRuntime().exec(command);
+            p.waitFor();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line = "";
+            while ((line = reader.readLine())!= null) {
+                output.append(line + "\n");
+            }
+            BufferedReader reader2 = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            line = "";
+            while ((line = reader.readLine())!= null) {
+                output2.append(line + "\n");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        String response = output.toString();
+        String response2 = output2.toString();
+        return response;
     }
 
 

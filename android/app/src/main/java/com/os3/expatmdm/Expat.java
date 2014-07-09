@@ -33,7 +33,7 @@ public class Expat {
             KernelExploits = new ArrayList<>(),
             RootExploits = new ArrayList<>(),
             Patches = new ArrayList<>();
-    private static Context Ctx;
+    public static Context Ctx;
 
     public static void Expat() {
         KernelExploits.clear();
