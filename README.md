@@ -3,6 +3,21 @@ Expat MDM
 
 ##### Proof of concept Expat MDM solution as part of a paper on Android patching
 
+### Abstract
+
+Android is currently the most popular smartphone OS in the world.
+Many dierent devices with outdated Android versions and kernels
+pose a risk as they become a potential target for attackers, making
+enterprises reluctant to allow employees to bring their Android devices
+to the workplace. Fixing vulnerabilities by patching the kernel and
+Android runtime in-memory allows leaving the underlying system
+mostly untouched while still providing protection against emerging
+threats.
+
+### Proof of concept
+
+This paper introduces the concept of using the same vulnerabilities that can be used for exploiting the device, to patch the system: _expatting_.
+
 The expatting techniques introduced in this paper were consolidated into
 a proof of concept Expat MDM solution. The proof of concept consists
 of a server and agent component, and demonstrates how an Expat MDM
