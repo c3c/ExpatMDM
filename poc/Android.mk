@@ -3,12 +3,12 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
-  fix_cve_2013_6282.c \
+  pat_cve_2013_6282.c \
   kallsyms.c \
   ptmx.c \
   backdoor_mmap.c
 
-LOCAL_MODULE := fix_cve_2013_6282
+LOCAL_MODULE := pat_cve_2013_6282
 LOCAL_MODULE_TAGS := optional
 LOCAL_STATIC_LIBRARIES += libkallsyms
 LOCAL_STATIC_LIBRARIES += libdevice_database
@@ -21,7 +21,7 @@ include $(BUILD_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
-  install_backdoor.c \
+  exp_cve_2013_6282.c \
   backdoor_mmap.c \
   kallsyms.c \
   ptmx.c \
@@ -29,7 +29,7 @@ LOCAL_SRC_FILES := \
   mmap.c \
   build_remap_pfn_range.c
 
-LOCAL_MODULE := install_backdoor
+LOCAL_MODULE := exp_cve_2013_6282
 LOCAL_MODULE_TAGS := optional
 LOCAL_STATIC_LIBRARIES := libdiagexploit
 LOCAL_STATIC_LIBRARIES += libperf_event_exploit
