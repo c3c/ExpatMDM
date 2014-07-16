@@ -3,6 +3,9 @@ Expat MDM
 
 ##### Proof of concept Expat MDM solution as part of a paper on Android patching
 
+[Paper](https://github.com/c3c/ExpatMDM/raw/master/deliverables/androidpatching.pdf)    
+[Presentation](https://github.com/c3c/ExpatMDM/raw/master/deliverables/presentation.pdf)
+
 ### Abstract
 
 Android is currently the most popular smartphone OS in the world.
